@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="./js/vue.js"></script>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app" @click="handleClick">
+        {{ message }}
+        {{pro.name}}
+    </div>
+</body>
+
+<script>
+    // 响应式过程
+    // new Vue() -> initState() -> initData() -> getData() -> pushTarget -> observe()
+    var app = new Vue({
+        el: '#app',
+        data() {
+            return {
+                message: 'Hello Vue!',
+                pro: {
+                    name: {
+                        name: 'wang'
+                    }
+                }
+            }
+
+        },
+
+        beforeCreate() {
+
+        },
+        created() {
+            console.log(this.pro,this.pro.name)
+        },
+        methods: {
+            handleClick() {
+
+            }
+        }
+    })
+
+    console.log(app.$data)
+</script>
+
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="box">
+
+    </div>
+</body>
+
+<script>
+    let data = {
+        name: 'wang',
+        age: 22,
+
+        address: {
+            country: 'china',
+            province: 'jiangsu',
+            city: {
+                name: 'shanghai',
+                isChina: true
+            }
+        }
+    }
+    class Vue {
+
+        constructor(el, data) {
+
+            Object.keys(data).forEach(key => {
+
+                Observe(data, key, data[key])
+            })
+
+        }
+
+    }
+    class Dep {
+
+        static target
+        constructor() {
+            this.subs = []
+        }
+
+        addSub() {
+            if (Dep.target) {
+                this.subs.push(Dep.target)
+            }
+        }
+
+        notify() {
+            this.subs.forEach(sub => {
+                sub.update()
+            })
+        }
+    }
+
+    class Watcher {
+
+    }
+
+    function Observe(data) {
+
+        if (typeof data !== "object") {
+            return
+        }
+        if (Array.isArray(data)) {
+            data.forEach(item => {
+                Observe(item)
+            })
+        }
+
+        data.__ob__ = new Observer(data)
+        Object.keys(data).forEach(key => {
+            defineReactive(data, key, data[key])
+        })
+
+    }
+    class Observer {
+
+        constructor(value) {
+            this.dep = new Dep()
+            this.value = value
+        }
+    }
+    function defineReactive(obj, key, value) {
+        observe(value);
+
+        Object.defineProperty(obj, key, {
+            get() {
+
+                
+                return value
+            },
+
+            set(newValue) {
+
+            }
+        })
+    }
+    data.name
+
+</script>
+
+</html>
