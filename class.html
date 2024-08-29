@@ -23,22 +23,17 @@
 </body>
 
 <script>
-    let person = {
-        name: 'wang',
-        age: 22
+    class Person {
+        constructor() {
+            this.age = 20
+        }
+        get name() {
+            console.log('get name')
+            return 'wang'
+        }
     }
-    function defineRec(obj, key, value) {
-        Object.defineProperty(obj, key, {
-            get() {
-                console.log('get')
-            }
-        })
-    }
-
-    defineRec(person, 'name', person['name'])
-
-    person.age
-
+    let p = new Person()
+    console.log(p,Object.keys(p))
 
 </script>
 

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wangEditor增加源码模式</title>
+</head>
+
+<body>
+    <div id="editor"></div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/wangeditor@latest/dist/wangEditor.min.js"></script>
+    <script type="text/javascript">
+        const E = window.wangEditor;
+        const editor = new E("#editor");
+
+        let isHTML = false;
+
+        const { BtnMenu } = E
+        class htmlMenu extends BtnMenu {
+            constructor(editor) {
+                const $elem = E.$(
+                    `<div class="w-e-menu">
+              <button>html</button>
+            </div>`
+                )
+                super($elem, editor)
+            }
+            clickHandler() {
+                let source = editor.txt.html();
+                if (source) {
+                    isHTML = !isHTML;
+                }
+                if (isHTML) {
+                    source = source.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/ /g, "&nbsp;");
+                } else {
+                    source = editor.txt.text().replace(/&lt;/ig, "<").replace(/&gt;/ig, ">").replace(/&nbsp;/ig, " ")
+                }
+                editor.txt.html(source);
+                this.tryChangeActive();
+                // console.log(source);
+            }
+            tryChangeActive() {
+                if (isHTML) {
+                    this.active()
+                } else {
+                    this.unActive()
+                }
+            }
+        }
+
+
+        // 注册菜单
+        const menuKey = 'htmlMenuKey' // 菜单 key ，各个菜单不能重复
+        editor.menus.extend('htmlMenuKey', htmlMenu)
+
+        // 将菜单加入到 editor.config.menus 中
+        // 也可以通过配置 menus 调整菜单的顺序，参考【配置菜单】部分的文档
+        editor.config.menus = editor.config.menus.concat(menuKey)
+
+        editor.create()
+    </script>
+</body>
+
+</html>

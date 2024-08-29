@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <script src="./js/vue.js"></script>
+    <script src="./js/vue2.7.js"></script>
     <style>
         body,
         html {
@@ -20,6 +20,9 @@
     <div id="app" @click="handleClick">
         {{ message }}
         {{pro.name}}
+        {{age}}
+
+        {{ttt}}
     </div>
 </body>
 
@@ -28,7 +31,6 @@
     // new Vue() -> initState() -> initData() -> getData() -> pushTarget -> observe()
     var app = new Vue({
         el: '#app',
-        
         data() {
             return {
                 message: 'Hello Vue!',
@@ -36,16 +38,29 @@
                     name: {
                         name: 'wang'
                     }
-                }
+                },
+                age: 22
             }
 
         },
+        computed: {
+            ttt() {
+                return this.age + this.message
+            }
+        },
+        watch: {
+            age: function (nVal, oVal) {
+                this.message = 'wang'
+            },
+            pro: function () {
 
+            }
+        },
         beforeCreate() {
 
         },
         created() {
-            console.log(this.pro,this.pro.name)
+
         },
         methods: {
             handleClick() {
@@ -53,8 +68,10 @@
             }
         }
     })
+    setTimeout(() => {
+        console.log(app)
+    }, 500)
 
-    console.log(app.$data)
 </script>
 
 </html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="./js/vue2.7.js"></script>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+
+        #app {
+            height: 50px;
+            background-color: blue;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app" @click="handleClick">
+        {{ myName }}
+
+    </div>
+</body>
+
+<script>
+    let temp = {
+        el: '#app',
+        data: {
+            age: 10,
+            p1: {
+                name: 'wang'
+
+            },
+            p2: {
+                name: 'xing'
+            }
+
+
+        },
+        computed: {
+            myName() {
+                return this.p1.name
+                // if (this.age > 21) {
+                //     // 3 4 5 6
+                //     return this.p1.name
+                // } else {
+                //     // 3 7 8 9
+                //     return this.p2.name
+                // }
+
+            }
+        },
+        methods: {
+            handleClick() {
+                this.age = 10
+                console.log(app)
+            }
+        }
+    }
+    var app = new Vue(temp)
+    setTimeout(() => {
+      
+        console.log(app)
+    }, 200)
+
+</script>
+
+</html>

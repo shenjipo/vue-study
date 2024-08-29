@@ -23,19 +23,7 @@
 </body>
 
 <script>
-    let data = {
-        name: 'wang',
-        age: 22,
 
-        address: {
-            country: 'china',
-            province: 'jiangsu',
-            city: {
-                name: 'shanghai',
-                isChina: true
-            }
-        }
-    }
     class Vue {
 
         constructor(el, data) {
@@ -77,18 +65,24 @@
         if (typeof data !== "object") {
             return
         }
+        console.log(data)
         if (Array.isArray(data)) {
             data.forEach(item => {
                 Observe(item)
             })
         }
-
+        Object.defineProperty(data, '__ob__', {
+            value: new Observer(data),
+            enumerable: false,
+            writable: true,
+            configurable: true
+        })
         data.__ob__ = new Observer(data)
         Object.keys(data).forEach(key => {
             defineReactive(data, key, data[key])
         })
 
-        
+
     }
     class Observer {
 
@@ -98,21 +92,36 @@
         }
     }
     function defineReactive(obj, key, value) {
-        observe(value);
+        Observe(value);
 
         Object.defineProperty(obj, key, {
             get() {
 
-                
+                console.log(`get`, value)
                 return value
             },
 
             set(newValue) {
-
+                value = newValue
             }
         })
     }
-    data.name
+    let data = {
+        name: 'wang',
+        age: 22,
+
+        address: {
+            country: 'china',
+            province: 'jiangsu',
+            city: {
+                name: 'shanghai',
+                isChina: true
+            }
+        }
+    }
+
+    Observe(data)
+  
 
 </script>
 
