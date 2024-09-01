@@ -24,7 +24,7 @@
 
     <div id="app" @click="handleClick">
         {{ myName }}
-
+        {{ageAndName}}
     </div>
 </body>
 
@@ -54,6 +54,12 @@
                 //     return this.p2.name
                 // }
 
+            },
+            comAge() {
+                return this.age
+            },
+            ageAndName() {
+                return this.comAge + this.p1.name
             }
         },
         methods: {
@@ -65,7 +71,7 @@
     }
     var app = new Vue(temp)
     setTimeout(() => {
-      
+
         console.log(app)
     }, 200)
 

@@ -26,26 +26,73 @@
 
     class Vue {
 
-        constructor(el, data) {
+        constructor(opt) {
 
-            Object.keys(data).forEach(key => {
+            this.$data = opt.data
 
-                Observe(data, key, data[key])
-            })
+            this.observe(this.$data, true)
+
 
         }
+        observe(data, isRoot) {
 
+            if (typeof data !== "object") {
+                return
+            }
+
+            if (Array.isArray(data)) {
+                data.forEach(item => {
+                    this.observe(item)
+                })
+            }
+
+            Object.keys(data).forEach(key => {
+                this.defineReactive(data, key, data[key])
+            })
+        }
+
+
+        defineReactive(obj, key, value) {
+            this.observe(value, false);
+            let dep = new Dep()
+            console.log(`key = ${key}`, dep)
+            Object.defineProperty(obj, key, {
+                get() {
+                    // 依赖收集
+                    if (Dep.target) {
+                        dep.depend()
+                    }
+
+                    return value
+                },
+
+                set(newValue) {
+                    value = newValue
+                    console.log('set', `key=${key}`, `newValue=${newValue}`)
+                    dep.notify()
+                }
+            })
+        }
     }
     class Dep {
 
         static target
+        static uuid = 0
+
         constructor() {
             this.subs = []
+            this.id = Dep.uuid++
         }
 
-        addSub() {
+        addSub(watcher) {
+
+            this.subs.push(watcher)
+
+        }
+
+        depend() {
             if (Dep.target) {
-                this.subs.push(Dep.target)
+                Dep.target.addDep(this)
             }
         }
 
@@ -57,33 +104,51 @@
     }
 
     class Watcher {
+        constructor(vm, expOrFn) {
+            this.vm = vm
+            this.expOrFn = expOrFn
 
+            this.deps = []
+            this.depIds = new Set()
+            this.newDeps = []
+            this.newDepIds = new Set()
+            this.value = null
+        }
+        update() {
+            this.get()
+        }
+        get() {
+            pushTarget(this)
+
+            const value = this.expOrFn.call(this.vm, this.vm)
+            this.value = value
+
+            this.depIds = this.newDepIds
+            this.newDepIds = new Set()
+
+            let temp = this.deps
+            this.deps = this.newDeps
+            this.newDeps = temp
+            this.newDeps.length = 0
+
+            popTarget()
+            return value
+        }
+
+        addDep(dep) {
+            const depId = dep.id
+            if (!this.newDepIds.has(depId)) {
+                this.newDeps.push(dep)
+                this.newDepIds.add(depId)
+
+                if (!this.depIds.has(depId)) {
+                    dep.addSub(this)
+                }
+            }
+        }
     }
 
-    function Observe(data) {
 
-        if (typeof data !== "object") {
-            return
-        }
-        console.log(data)
-        if (Array.isArray(data)) {
-            data.forEach(item => {
-                Observe(item)
-            })
-        }
-        Object.defineProperty(data, '__ob__', {
-            value: new Observer(data),
-            enumerable: false,
-            writable: true,
-            configurable: true
-        })
-        data.__ob__ = new Observer(data)
-        Object.keys(data).forEach(key => {
-            defineReactive(data, key, data[key])
-        })
-
-
-    }
     class Observer {
 
         constructor(value) {
@@ -91,38 +156,48 @@
             this.value = value
         }
     }
-    function defineReactive(obj, key, value) {
-        Observe(value);
 
-        Object.defineProperty(obj, key, {
-            get() {
-
-                console.log(`get`, value)
-                return value
-            },
-
-            set(newValue) {
-                value = newValue
-            }
-        })
+    const targetStack = []
+    function pushTarget(target) {
+        targetStack.push(target)
+        Dep.target = target;
     }
-    let data = {
-        name: 'wang',
-        age: 22,
 
-        address: {
-            country: 'china',
-            province: 'jiangsu',
-            city: {
-                name: 'shanghai',
-                isChina: true
+    function popTarget() {
+        targetStack.pop()
+        Dep.target = targetStack[targetStack.length - 1];
+    }
+
+    let v = new Vue({
+        data: {
+            name: 'wang',
+            age: 22,
+
+            address: {
+                country: 'china',
+                province: 'jiangsu',
+                city: {
+                    name: 'shanghai',
+                    isChina: true
+                }
             }
         }
-    }
+    })
 
-    Observe(data)
-  
+    // 模拟一个 render watcher，这个watcher依赖的数据是name 和 age
+    let renderWatcher = new Watcher(v, function () {
+        return this.$data.name + this.$data.age
+    })
+    // 模拟生成真实dom 某个dom的渲染需要用用到这个watcher的value，触发自动依赖收集，
+    // 此watcher的deps中会收集到name 和 age的dep实例，
+    // name 和 age 的dep实例 也会把这个watcher加入到subs数组中， 当数据变更时，通知watcher去更新视图
+    const value = renderWatcher.get()
+    console.log(value, 'renderWatcher')
+    // renderWatcher依赖的数据发生边变化 会调用renderWatcher的update 在实际的vue中，会去更新dom，我们这里就更新了value值
+    v.$data.name = 'fsdjklgjkls'
+    console.log(`renderWatcher=`, renderWatcher)
 
+    
 </script>
 
 </html>

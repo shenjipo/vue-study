@@ -33,8 +33,7 @@
             this.Observe(this.$data, true)
 
             // 把computed转变成响应式数据
-            // computed的key都挂在这个对象上，最终把这个对象变成响应式的
-
+            // computed的key都挂在这个对象上，方便调试， 最终根据计算属性的key挂在vrdom上
             this._computedWatchers = {}
 
             Object.keys(options.computed).forEach(key => {
@@ -47,9 +46,16 @@
 
                         var watcher = this._computedWatchers && this._computedWatchers[key];
                         watcher.evaluate(); // 这儿触发了 get
+                        console.log(`get key=${key}`, Dep.target)
                         if (Dep.target) {
-                            // 当一个计算属性依赖了另一个计算属性 走这
-                            watcher.depend(); // 这儿又加了一次
+                            // 当计算属性A依赖了计算属性B，走这，此时的watcher是B watcher
+                            // 例如在本例中， fullInfo 计算属性依赖了 ageAndName ，当我们初次（本例手动模拟触发，实际vue会在渲染dom的时候触发）获取
+                            // fullInfo值的时候，会把Dep.target值设为 fullInfo 的 computed watcher，然后执行了 用户设置的 fullInfo 函数，在此函数内部，依赖了
+                            // ageAndName ，此时会触发 ageAndName 被我们重写的get逻辑，先计算一遍 ageAndName 的返回值， 然后就进入到这里， 
+                            // 通知 ageAndName 依赖的数据重新收集依赖，在本例中 ageAndName 依赖了 age P1 和 name，重新收集依赖时， age P1 name 的observer
+                            // 会把 fullInfo watcher 加入到subs中， 当 age P1 或者 name数据发生变化时，自动调用watcher.update， 这样就建立了 age p1 name 和
+                            // fullInfo 的响应式联系
+                            watcher.depend(); // 通知 数据的 observer 收集当前依赖，如果
                         }
                         return watcher.value;
                     }
@@ -71,22 +77,6 @@
                     Observe(item)
                 })
             }
-
-            // if (root) {
-            //     Object.defineProperty(this, '__ob__', {
-            //         value: new Observer(data),
-            //         enumerable: false,
-            //         writable: true,
-            //         configurable: true
-            //     })
-            // } else {
-            //     Object.defineProperty(data, '__ob__', {
-            //         value: new Observer(data),
-            //         enumerable: false,
-            //         writable: true,
-            //         configurable: true
-            //     })
-            // }
 
 
             Object.keys(data).forEach(key => {
@@ -129,9 +119,7 @@
         }
 
         addSub(watcher) {
-
             this.subs.push(watcher)
-
         }
 
         depend() {
@@ -167,6 +155,8 @@
         }
         // get 触发数据get watcher 加入 newDep  结束 dep = newDep  new Dep = []
         get() {
+            pushTarget(this)
+
             const value = this.expOrFn.call(this.vm, this.vm)
 
             this.depIds = this.newDepIds
@@ -176,6 +166,8 @@
             this.deps = this.newDeps
             this.newDeps = temp
             this.newDeps.length = 0
+
+            popTarget()
             return value
         }
 
@@ -183,10 +175,32 @@
 
             const depId = dep.id
             if (!this.newDepIds.has(depId)) {
-                console.log(dep, 'addDep')
+                // console.log(dep, 'addDep')
                 this.newDeps.push(dep)
                 this.newDepIds.add(depId)
                 if (!this.depIds.has(depId)) {
+                    // 这个if应对这种情况
+                    // 生成 b计算属性时，b直接依赖了p1.age 又通过a间接依赖了 p1.age，防止p1.age重复收集依赖
+                    /*let sss = {
+                        p1: {
+                            age: 22,
+                            name: 'wang'
+                        },
+                        p2: {
+                            age: 24,
+                            name: 'xing'
+                        }
+                    }
+                    let computed = {
+                        a() {
+                            return this.p1.age + this.p1.name
+                        },
+                        b() {
+                            return this.p1.age + this.a + this.p2.age
+                        }
+                    }
+                        */
+
                     dep.addSub(this)
                 }
 
@@ -194,7 +208,7 @@
 
 
         }
-
+        // 通知被观察的数据收集依赖
         depend() {
             let i = this.deps.length
             while (i--) {
@@ -215,6 +229,15 @@
     }
 
 
+    const targetStack = [];
+    function pushTarget(target) {
+        targetStack.push(target);
+        Dep.target = target;
+    }
+    function popTarget() {
+        targetStack.pop();
+        Dep.target = targetStack[targetStack.length - 1];
+    }
 
     let testV = new Vue({
         data: {
@@ -223,19 +246,17 @@
                 name: 'wang'
             },
             p2: {
-                name: 'xing'
+                address: 'xing'
             }
         },
         computed: {
+            fullInfo() {
+                return this.ageAndName + this.$data.p2.address
+            },
             ageAndName() {
-
-                if (this.$data.age > 22) {
-                    return this.$data.p1.name
-                } else {
-                    return this.$data.p2.name
-                }
-
-            }
+                return this.$data.age + this.$data.p1.name
+            },
+           
         }
     })
 
@@ -244,18 +265,14 @@
 
     // 0 4 3
     Object.keys(testV._computedWatchers).forEach(key => {
-        Dep.target = testV._computedWatchers[key]
+
         console.log(`touch key=${key}`)
         testV[key]
-        Dep.target = null
         console.log(`touch end`)
     })
+    // testV.$data.age = 23
     console.log(testV)
-    Dep.target = testV._computedWatchers['ageAndName']
-    // 0 1 2
-    testV.$data.age = 24
 
-    console.log(testV)
 
 
 </script>

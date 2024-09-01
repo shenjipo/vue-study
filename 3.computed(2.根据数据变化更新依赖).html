@@ -47,7 +47,7 @@
 
                         var watcher = this._computedWatchers && this._computedWatchers[key];
                         watcher.evaluate(); // 这儿触发了 get
-                     
+
                         return watcher.value;
                     }
                 })
@@ -69,21 +69,6 @@
                 })
             }
 
-            // if (root) {
-            //     Object.defineProperty(this, '__ob__', {
-            //         value: new Observer(data),
-            //         enumerable: false,
-            //         writable: true,
-            //         configurable: true
-            //     })
-            // } else {
-            //     Object.defineProperty(data, '__ob__', {
-            //         value: new Observer(data),
-            //         enumerable: false,
-            //         writable: true,
-            //         configurable: true
-            //     })
-            // }
 
 
             Object.keys(data).forEach(key => {
@@ -247,11 +232,11 @@
         Dep.target = null
         console.log(`touch end`)
     })
-    console.log(testV)
-    Dep.target = testV._computedWatchers['ageAndName']
-    // 0 1 2
-    testV.$data.age = 24
+    // console.log(testV)
 
+    // 0 1 2
+    Dep.target = testV._computedWatchers['ageAndName']
+    testV.$data.age = 24
     console.log(testV)
 
 
