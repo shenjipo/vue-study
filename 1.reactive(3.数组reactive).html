@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="box">
+
+    </div>
+</body>
+
+<script>
+    var arrayProto = Array.prototype;
+    var arrayMethods = Object.create(arrayProto);
+    const methodsToPatch = [
+        'push',
+        'pop',
+        'shift',
+        'unshift',
+        'splice',
+        'sort',
+        'reverse'
+    ];
+    methodsToPatch.forEach(function (method) {
+        Object.defineProperty(arrayMethods, method, {
+            value: function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                var result = Array.prototype[method].apply(this, args);
+                const ob = this.__ob__;
+                ob.dep.notify()
+                return result
+            },
+            enumerable: false,
+            writable: true,
+            configurable: true
+        })
+    })
+
+
+    class Vue {
+
+        constructor(opt) {
+
+            this.$data = opt.data
+
+            this.observe(this.$data, true)
+
+
+        }
+        observe(data, isRoot) {
+
+            if (typeof data !== "object") {
+                return
+            }
+            const ob = new Observer(data)
+            Object.defineProperty(data, '__ob__', {
+                value: ob,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            })
+
+            if (Array.isArray(data)) {
+
+                // 劫持数组的7中方法
+                methodsToPatch.forEach(method => {
+                    Object.defineProperty(data, method, {
+                        value: arrayMethods[method],
+                        enumerable: false,
+                        writable: true,
+                        configurable: true
+                    })
+                })
+
+
+                data.forEach(item => {
+                    this.observe(item)
+                })
+            }
+
+
+            Object.keys(data).forEach(key => {
+                this.defineReactive(data, key, data[key])
+            })
+            return ob
+        }
+
+
+        defineReactive(obj, key, value) {
+            let childOb = this.observe(value, false)
+            let dep = new Dep()
+            // console.log(`key = ${key}`, dep)
+            const that = this
+            Object.defineProperty(obj, key, {
+                get() {
+                    // 依赖收集
+                    if (Dep.target) {
+                        dep.depend()
+                        if (childOb) {
+                            childOb.dep.depend()
+                        }
+                    }
+                    return value
+                },
+
+                set(newValue) {
+                    value = newValue
+                    // console.log('set', `key=${key}`, `newValue=${newValue}`)
+                    childOb = that.observe(newValue, false)
+                    dep.notify()
+                }
+            })
+        }
+
+        $set(target, key, value) {
+            this.defineReactive(target, key, value)
+        }
+    }
+    class Dep {
+
+        static target
+        static uuid = 0
+
+        constructor() {
+            this.subs = []
+            this.id = Dep.uuid++
+        }
+
+        addSub(watcher) {
+
+            this.subs.push(watcher)
+
+        }
+
+        depend() {
+            if (Dep.target) {
+                Dep.target.addDep(this)
+            }
+        }
+
+        notify() {
+            this.subs.forEach(sub => {
+                sub.update()
+            })
+        }
+    }
+
+    class Watcher {
+        constructor(vm, expOrFn) {
+            this.vm = vm
+            this.expOrFn = expOrFn
+
+            this.deps = []
+            this.depIds = new Set()
+            this.newDeps = []
+            this.newDepIds = new Set()
+            this.value = this.get()
+        }
+        update() {
+            this.get()
+        }
+        get() {
+            pushTarget(this)
+
+            const value = this.expOrFn.call(this.vm, this.vm)
+            this.value = value
+
+            this.depIds = this.newDepIds
+            this.newDepIds = new Set()
+
+            let temp = this.deps
+            this.deps = this.newDeps
+            this.newDeps = temp
+            this.newDeps.length = 0
+
+            popTarget()
+            return value
+        }
+
+        addDep(dep) {
+            const depId = dep.id
+            if (!this.newDepIds.has(depId)) {
+                this.newDeps.push(dep)
+                this.newDepIds.add(depId)
+
+                if (!this.depIds.has(depId)) {
+                    dep.addSub(this)
+                }
+            }
+        }
+    }
+
+
+    class Observer {
+
+        constructor(value) {
+            this.dep = new Dep()
+            this.value = value
+        }
+    }
+
+    const targetStack = []
+    function pushTarget(target) {
+        targetStack.push(target)
+        Dep.target = target;
+    }
+
+    function popTarget() {
+        targetStack.pop()
+        Dep.target = targetStack[targetStack.length - 1];
+    }
+
+    let v = new Vue({
+        data: {
+            nameList: ['wang'],
+            age: 22,
+        }
+    })
+    // 模拟渲染watcher 
+    let renderWatcher = new Watcher(v, function aa() {
+        return this.$data.nameList.join('->')
+    })
+   
+    console.log(renderWatcher)
+    // push 之后能够自动更新watcher的value
+    v.$data.nameList.push('xing')
+    console.log(renderWatcher)
+
+
+
+</script>
+
+</html>

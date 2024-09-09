@@ -924,7 +924,7 @@
             this.mock = mock;
             // this.value = value
             this.dep = mock ? mockDep : new Dep();
-            console.log(`dep=`, this.dep, value)
+            // console.log(`dep=`, this.dep, value)
             this.vmCount = 0;
             def(value, '__ob__', this);
             if (isArray(value)) {
@@ -994,7 +994,7 @@
     function defineReactive(obj, key, val, customSetter, shallow, mock, observeEvenIfShallow) {
         if (observeEvenIfShallow === void 0) { observeEvenIfShallow = false; }
         var dep = new Dep();
-        console.log(`key=${key}`, dep)
+        // console.log(`key=${key}`, dep)
         var property = Object.getOwnPropertyDescriptor(obj, key);
         if (property && property.configurable === false) {
             return;
@@ -1022,7 +1022,7 @@
                         });
                     }
                     if (childOb) {
-                     
+
                         childOb.dep.depend();
                         if (isArray(value)) {
                             dependArray(value);
@@ -4183,6 +4183,7 @@
             }
             else {
                 this.getter = parsePath(expOrFn);
+                console.log(this.getter, 'getter')
                 if (!this.getter) {
                     this.getter = noop;
                     warn$2("Failed watching path: \"".concat(expOrFn, "\" ") +
@@ -4286,6 +4287,7 @@
                     // set new value
                     var oldValue = this.value;
                     this.value = value;
+                    console.log('user', this.user)
                     if (this.user) {
                         var info = "callback for watcher \"".concat(this.expression, "\"");
                         invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info);
@@ -4576,6 +4578,7 @@
         }
     }
     function createWatcher(vm, expOrFn, handler, options) {
+        console.log('createWatcher', isPlainObject(handler))
         if (isPlainObject(handler)) {
             options = handler;
             handler = handler.handler;
@@ -4617,6 +4620,7 @@
             }
             options = options || {};
             options.user = true;
+            console.log(options)
             var watcher = new Watcher(vm, expOrFn, cb, options);
             if (options.immediate) {
                 var info = "callback for immediate watcher \"".concat(watcher.expression, "\"");

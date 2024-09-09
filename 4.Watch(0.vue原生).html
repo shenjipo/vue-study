@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="./js/vue2.7.js"></script>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+
+        #app {
+            height: 50px;
+            background-color: blue;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app" @click="handleClick">
+
+    </div>
+</body>
+
+<script>
+    let temp = {
+        el: '#app',
+        data: {
+            name: ['wang', 'xing'],
+            age: 22,
+        },
+        watch: {
+            age: {
+                handler: function (nVal, oVal) {
+
+                    console.log('handler')
+                },
+                immediate: true
+            },
+
+        },
+        methods: {
+            handleClick() {
+                this.age++
+
+            }
+        }
+    }
+    var app = new Vue(temp)
+    console.log(app)
+</script>
+
+</html>

@@ -18,32 +18,86 @@
 <body>
 
     <div class="box">
-
+        <button onclick="MyClick()">确定</button>
     </div>
 </body>
 
 <script>
+    var arrayProto = Array.prototype;
+    var arrayMethods = Object.create(arrayProto);
+    const methodsToPatch = [
+        'push',
+        'pop',
+        'shift',
+        'unshift',
+        'splice',
+        'sort',
+        'reverse'
+    ];
+    methodsToPatch.forEach(function (method) {
+        Object.defineProperty(arrayMethods, method, {
+            value: function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                var result = Array.prototype[method].apply(this, args);
+                const ob = this.__ob__;
+                ob.dep.notify()
+                return result
+            },
+            enumerable: false,
+            writable: true,
+            configurable: true
+        })
+    })
+
+    const parsePath = (path) => {
+        const segments = path.split('.')
+        return function (obj) {
+            let $data = obj.$data
+            for (let i = 0; i < segments.length; i++) {
+                if (!$data)
+                    return;
+                $data = $data[segments[i]];
+            }
+            return $data;
+        }
+    }
 
     class Vue {
 
         constructor(opt) {
 
             this.$data = opt.data
-
+            // 1. 初始化data
             this.observe(this.$data, true)
+            // 2.初始化computed
 
+            // 3.初始化watch
+            this.initWatch(opt.watch)
 
         }
+
+        initWatch(watch) {
+            for (let watchKey in watch) {
+                const handler = watch[watchKey]
+                this.$watch(watchKey, handler)
+            }
+        }
+
+        $watch(expOrFn, handler) {
+            const watcher = new Watcher(this, expOrFn, handler)
+
+            return function unwatchFn() {
+                watcher.teardown()
+            }
+        }
+
         observe(data, isRoot) {
 
             if (typeof data !== "object") {
                 return
-            }
-
-            if (Array.isArray(data)) {
-                data.forEach(item => {
-                    this.observe(item)
-                })
             }
             const ob = new Observer(data)
             Object.defineProperty(data, '__ob__', {
@@ -53,17 +107,34 @@
                 configurable: true
             })
 
+            if (Array.isArray(data)) {
+
+                // 劫持数组的7中方法
+                methodsToPatch.forEach(method => {
+                    Object.defineProperty(data, method, {
+                        value: arrayMethods[method],
+                        enumerable: false,
+                        writable: true,
+                        configurable: true
+                    })
+                })
+
+
+                data.forEach(item => {
+                    this.observe(item)
+                })
+            }
+
+
             Object.keys(data).forEach(key => {
                 this.defineReactive(data, key, data[key])
             })
             return ob
         }
-
-
         defineReactive(obj, key, value) {
             let childOb = this.observe(value, false)
             let dep = new Dep()
-            console.log(`key = ${key}`, dep)
+            // console.log(`key = ${key}`, dep)
             const that = this
             Object.defineProperty(obj, key, {
                 get() {
@@ -79,20 +150,14 @@
 
                 set(newValue) {
                     value = newValue
-                    console.log('set', `key=${key}`, `newValue=${newValue}`)
+                    // console.log('set', `key=${key}`, `newValue=${newValue}`)
                     childOb = that.observe(newValue, false)
                     dep.notify()
                 }
             })
         }
-
         $set(target, key, value) {
-            // 这就是为什么vue源码中 生成了两种dep实例
-            // 一种是在闭包中的 另外一种实在对象的__ob__上 ，
-            // 为了在 对象上添加、删除键值时，能实现响应式，还有为了在调用数组的7中方法时也能实现响应式
-            const ob = target.__ob__
             this.defineReactive(target, key, value)
-            ob.dep.notify()
         }
     }
     class Dep {
@@ -125,10 +190,16 @@
     }
 
     class Watcher {
-        constructor(vm, expOrFn) {
+        constructor(vm, expOrFn, cb) {
             this.vm = vm
-            this.expOrFn = expOrFn
+            // render watcher 和 computed watcher的 expOrFn 时函数，但是 用户定义的watch watcher expOrFn是个对象
+            if (typeof expOrFn === "function") {
+                this.getter = expOrFn
+            } else {
+                this.getter = parsePath(expOrFn)
+            }
 
+            this.cb = cb
             this.deps = []
             this.depIds = new Set()
             this.newDeps = []
@@ -141,7 +212,10 @@
         get() {
             pushTarget(this)
 
-            const value = this.expOrFn.call(this.vm, this.vm)
+            const value = this.getter.call(this.vm, this.vm)
+            if (this.cb) {
+                this.cb.call(this.vm, value, this.value)
+            }
             this.value = value
 
             this.depIds = this.newDepIds
@@ -167,6 +241,10 @@
                 }
             }
         }
+
+        teardown() {
+
+        }
     }
 
 
@@ -191,51 +269,23 @@
 
     let v = new Vue({
         data: {
-            name: 'wang',
+            nameList: ['wang'],
             age: 22,
-
-            address: {
-                country: 'china',
-                city: {
-                    name: 'shanghai',
-                    isChina: true
-                }
+        },
+        watch: {
+            age(nVal, oVal) {
+                console.log('age change', nVal, oVal)
             }
         }
     })
-    // 模拟渲染watcher 修改已经存在的字段能够触发响应式
-    // let renderWatcher = new Watcher(v, function aa() {
-    //     return this.$data.address.country
-    // })
-    // renderWatcher.get()
-    // console.log(renderWatcher)
-    // v.$data.address.country = 'America'
-    // console.log(renderWatcher)
 
-    // 给address新增一个字段，无法触发响应式
-    // let renderWatcher = new Watcher(v, function aa() {
-    //     return this.$data.address.country + this.$data.address.province
-    // })
-    // v.$data.address.province = 'jiangsu'
-    // renderWatcher.get()
-    // console.log(renderWatcher)
-    // v.$data.address.province = 'zhejiang'
-    // console.log(renderWatcher)
+    function MyClick() {
+        console.log(v)
+        v.$data.age++
+    }
 
-    // 使用$set添加字段，能够触发响应式
-    // 这人有个小瑕疵 应该创建watcher后立即执行 renderWatcher.get()，然后调用v.$set应该能自动触发watcher的重新计算  
-    let renderWatcher = new Watcher(v, function aa() {
-        if (this.$data.address.province) {
-            return this.$data.address.country + this.$data.address.province
-        }
-        return this.$data.address.country
-    })
-   
-    v.$set(v.$data.address, 'province', 'jiangsu')
-    // 在此处模拟渲染真实dom，需要计算watcher的值，同时触发自动收集依赖
-    console.log(renderWatcher)
-    v.$data.address.province = 'zhejiang'
-    console.log(renderWatcher)
+
+
 </script>
 
 </html>
