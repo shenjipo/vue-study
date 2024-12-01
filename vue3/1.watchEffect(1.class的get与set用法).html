@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="../js/vue.global.js"></script>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+
+</body>
+
+<script>
+    class Person {
+        constructor(name) {
+            this.name = name
+        }
+
+        get value() {
+            console.log('get value')
+            return this.name
+        }
+
+        set value(newValue) {
+            console.log('set newValue', newValue)
+            this.name = newValue
+        }
+    }
+
+
+    let p = new Person('wang')
+    p.value = 'xi'
+    console.log(p)
+    // class 的get和set其实就是语法糖
+    // 原理是 使用Object.defineProperty 劫持 构造函数的prototype对象的某个属性
+    // 下面 构造的 Student 和 上面的 Person实现了完全一样的效果
+    function Student(name) {
+        this.name = name
+    }
+
+    Object.defineProperty(Student.prototype, 'value', {
+        get() {
+            console.log('get student')
+            return this.name
+        },
+        set(newValue) {
+            this.name = newValue
+        },
+        enumerable: false
+    })
+    let s = new Student('wang')
+    console.log(s)
+</script>
+
+</html>

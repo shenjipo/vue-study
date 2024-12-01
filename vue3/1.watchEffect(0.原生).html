@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="../js/vue.global.js"></script>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app">
+
+        <div>
+
+        </div>
+
+
+        <button @click="changeMessage">确定</button>
+        <button @click="changeName1">name1</button>
+        <button @click="changeName2">name2</button>
+    </div>
+</body>
+
+<script>
+    const { createApp, ref, computed, watchEffect } = Vue
+    // RefImpl
+    createApp({
+        setup() {
+            const flag = ref(true)
+            const name1 = ref('a')
+            const name2 = ref('b')
+
+            const changeMessage = () => {
+                flag.value = false
+            }
+            const changeName1 = () => {
+                name1.value = new Date().getTime().toString()
+            }
+            const changeName2 = () => {
+                name2.value = new Date().getTime().toString()
+            }
+            // watchEffect(() => {
+            //     console.log('effect函数执行')
+            //     let temp = ''
+            //     if (flag.value) {
+            //         name1.value + '1'
+            //     } else {
+            //         name2.value + '1'
+            //     }
+            // })
+
+            watchEffect(() => {
+                const comValue = name1.value + name2.value + '1'
+            })
+
+
+            // watchEffect(() => {
+            //     const comValue = name1.value + name2.value
+            // })
+            return {
+                name1,
+                name2,
+                changeMessage,
+                changeName1,
+                changeName2
+            }
+        }
+    }).mount('#app')
+
+</script>
+
+</html>

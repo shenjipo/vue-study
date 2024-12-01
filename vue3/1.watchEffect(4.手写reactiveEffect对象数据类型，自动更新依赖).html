@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="../js/vue.global.js"></script>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+
+</body>
+
+<script>
+    let activeSub;
+    function cleanupEffect() {
+        activeSub = null
+    }
+    class RefImpl {
+        constructor(value) {
+            this.dep = new Dep();
+            // 暂时只实现基本数据类型的响应式，不支持对象类型
+            this._rawValue = value
+            this._value = value
+        }
+
+        get value() {
+
+            this.dep.track();
+
+            return this._value;
+        }
+
+        set value(newValue) {
+            this._value = newValue
+
+            this.dep.trigger();
+        }
+    }
+
+    function ref(value) {
+        return new RefImpl(value);
+    }
+    class Dep {
+        // 指向Link链表的尾部节点
+        constructor() {
+            this.version = 0;
+            this.activeLink = void 0;
+            this.subs = void 0;
+            this.subsHead = void 0;
+        }
+
+        track() {
+            let link = this.activeLink;
+            // link === void 0 第一次构建依赖
+
+            if (link === void 0) {
+                link = this.activeLink = new Link(activeSub, this)
+                if (!activeSub.deps) {
+                    activeSub.deps = activeSub.depsTail = link;
+                } else {
+                    link.prevDep = activeSub.depsTail;
+                    activeSub.depsTail.nextDep = link;
+                    activeSub.depsTail = link;
+                }
+                addSub(link);
+            } else if (link.version === -1) {
+                link.version = this.version;
+            }
+
+        }
+
+        trigger() {
+            this.version++
+            this.notify();
+        }
+        notify() {
+            for (let link = this.subs; link; link = link.prevSub) {
+                link.sub.notify()
+            }
+        }
+    }
+
+    function addSub(link) {
+        const currentTail = link.dep.subs;
+        if (currentTail !== link) {
+            link.prevSub = currentTail;
+            if (currentTail) {
+                currentTail.nextSub = link;
+            }
+        }
+        if (link.dep.subsHead === void 0) {
+            link.dep.subsHead = link;
+        }
+        link.dep.subs = link;
+    }
+
+    class Link {
+        constructor(sub, dep) {
+            this.name = new Date().getTime()
+            // watchEffect函数
+            this.sub = sub;
+            // 依赖的数据
+            this.dep = dep;
+            // 指向Link链表的后一个节点（X轴）nextLink
+            this.nextDep = void 0
+            // 指向Link链表的前一个节点（X轴）prevLink
+            this.prevDep = void 0
+            // 指向Link链表的下一个节点（Y轴）
+            this.nextSub = void 0
+            // 指向Link链表的上一个节点（Y轴）
+            this.prevSub = void 0
+            // 用于判断当前link和dep还是否保持响应式关系
+            this.version = dep.version
+        }
+    }
+
+    // sub
+    class ReactiveEffect {
+        constructor(fn) {
+            this.fn = fn;
+            this.deps = void 0;
+            this.depsTail = void 0;
+        }
+
+        run() {
+
+            prepareDeps(this);
+            activeSub = this
+            const res = this.fn()
+            activeSub = undefined
+            cleanupDeps(this)
+
+            return res
+        }
+
+        notify() {
+
+            this.run()
+        }
+    }
+
+    // 用来初始化当前sub 关联的link version全部置为-1， 然后再更新数据时，把用到的link.version更新，
+    // 就知道哪些link有用 哪些没用
+    function prepareDeps(sub) {
+        for (let link = sub.deps; link; link = link.nextDep) {
+            link.version = -1;
+        }
+    }
+    function cleanupDeps(sub) {
+        let head = sub.deps
+        let tail = sub.depsTail
+        let link = sub.depsTail
+        while (link) {
+            const prevLink = link.prevDep
+            if (link.version === -1) {
+                if (link === tail) {
+                    tail = prevDep
+                }
+                removeDep(link)
+                removeSub(link)
+            } else {
+                head = link
+            }
+            link = prevLink
+        }
+        sub.deps = head;
+        sub.depsTail = tail;
+
+    }
+    function removeSub(link) {
+        const { dep, prevSub, nextSub } = link;
+        if (prevSub) {
+            prevSub.nextSub = nextSub;
+            link.prevSub = void 0;
+        }
+        if (nextSub) {
+            nextSub.prevSub = prevSub;
+            link.nextSub = void 0;
+        }
+        if (dep.subsHead === link) {
+            dep.subsHead = nextSub;
+        }
+        if (dep.subs === link) {
+            dep.subs = prevSub;
+        }
+    }
+    function removeDep(link) {
+        const { prevDep, nextDep } = link;
+        if (prevDep) {
+            prevDep.nextDep = nextDep;
+            link.prevDep = void 0;
+        }
+        if (nextDep) {
+            nextDep.prevDep = prevDep;
+            link.nextDep = void 0;
+        }
+    }
+    const name1 = ref('wang')
+    const name2 = ref('xing')
+    const flag = ref(true)
+    const effect1 = new ReactiveEffect(() => {
+        console.log('ReactiveEffect')
+        let temp = ''
+        if (flag.value) {
+            temp = name1.value
+        } else {
+            temp = name2.value
+        }
+
+    })
+    effect1.run()
+
+    flag.value = false
+    name1.value = 'aaa'
+    name1.value = 'xxx'
+  
+    // const effect2 = new ReactiveEffect(() => {
+    //     console.log('ReactiveEffect2', count++)
+    //     name2.value + 'xing'
+    // })
+    // effect2.run()
+
+
+
+</script>
+
+</html>
