@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="../js/vue.global.js"></script>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app">
+
+        {{person}}
+
+        <button @click="changeAge">changeAge</button>
+    </div>
+</body>
+
+<script>
+    const { createApp, ref, computed, watchEffect } = Vue
+    // RefImpl
+    createApp({
+        setup() {
+            const person = ref({
+                name: 'wang',
+                child: {
+                    name: 'x',
+                    age: 22
+                },
+            })
+            watchEffect(() => {
+                console.log('触发watchEffect')
+                const age = person.value.child.age
+            })
+            const changeAge = () => {
+                person.value.child.age = 33
+            }
+            return {
+                person,
+                changeAge
+            }
+        }
+    }).mount('#app')
+
+</script>
+
+</html>

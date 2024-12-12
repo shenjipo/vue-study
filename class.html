@@ -31,10 +31,18 @@
             console.log('get name')
             return 'wang'
         }
+        get() {
+            return 'aaa'
+        }
     }
-    let p = new Person()
-    console.log(p,Object.keys(p))
-
+    let p1 = new Person()
+    let p2 = new Person()
+    console.log(p1.get === p2.get)
+    console.log({
+        get(){
+            return '66'
+        }
+    })
 </script>
 
 </html>

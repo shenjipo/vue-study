@@ -21,35 +21,100 @@
 </body>
 
 <script>
+    // createReactiveObject MutableReactiveHandler
+    const isObject = (val) => val !== null && typeof val === "object";
+    const proxyMap = new WeakMap()
     let activeSub;
     function cleanupEffect() {
         activeSub = null
     }
+    function ref(value) {
+        return new RefImpl(value);
+    }
+    const targetMap = new WeakMap();
+    function track(target, key) {
+        if (activeSub) {
+
+            let depsMap = targetMap.get(target);
+            if (!depsMap) {
+                targetMap.set(target, depsMap = new Map());
+            }
+            let dep = depsMap.get(key);
+            if (!dep) {
+                depsMap.set(key, dep = new Dep());
+                dep.map = depsMap;
+                dep.key = key;
+            }
+            dep.track();
+        }
+    }
+
+    function trigger(target, key, newValue, oldValue) {
+        const depsMap = targetMap.get(target);
+        const run = (dep) => {
+
+            if (dep) {
+                dep.trigger();
+            }
+        };
+        run(depsMap.get(key))
+    }
+
+    class MutableReactiveHandler {
+        get(target, key, receiver) {
+
+            const res = Reflect.get(target, key, receiver);
+            track(target, key)
+            if (isObject(res)) {
+                return reactive(res);
+            }
+
+            return res;
+        }
+        set(target, key, newValue, receiver) {
+
+            let oldValue = target[key];
+            const res = Reflect.set(target, key, newValue, receiver);
+            trigger(target, key, newValue, oldValue);
+            return res;
+        }
+    }
+    const mutableHandlers = new MutableReactiveHandler();
+
+    function reactive(target) {
+        // 如果已经被收集过依赖了，就直接返回
+        const existingProxy = proxyMap.get(target);
+        if (existingProxy) {
+            return existingProxy
+        }
+        const proxy = new Proxy(target, mutableHandlers);
+        proxyMap.set(target, proxy)
+
+        return proxy;
+    }
+
     class RefImpl {
         constructor(value) {
             this.dep = new Dep();
             // 暂时只实现基本数据类型的响应式，不支持对象类型
             this._rawValue = value
-            this._value = value
+            this._value = isObject(value) ? reactive(value) : value
         }
 
         get value() {
 
             this.dep.track();
-
             return this._value;
         }
 
         set value(newValue) {
-            this._value = newValue
 
+            this._value = newValue
             this.dep.trigger();
         }
     }
 
-    function ref(value) {
-        return new RefImpl(value);
-    }
+
     class Dep {
         // 指向Link链表的尾部节点
         constructor() {
@@ -60,10 +125,14 @@
         }
 
         track() {
+            // 当 触发 响应式对象类型的数据 的访问时， activeSub为null 这时候不需要进行依赖收集
+            if (!activeSub) {
+                return;
+            }
+
             let link = this.activeLink;
             // link === void 0 第一次构建依赖
-
-            if (link === void 0) {
+            if (link === void 0 || link.sub !== activeSub) {
                 link = this.activeLink = new Link(activeSub, this)
                 if (!activeSub.deps) {
                     activeSub.deps = activeSub.depsTail = link;
@@ -76,13 +145,13 @@
             } else if (link.version === -1) {
                 link.version = this.version;
             }
-
         }
 
         trigger() {
             this.version++
             this.notify();
         }
+
         notify() {
             for (let link = this.subs; link; link = link.prevSub) {
                 link.sub.notify()
@@ -205,33 +274,37 @@
             link.nextDep = void 0;
         }
     }
-    const name1 = ref('wang')
-    const name2 = ref('xing')
-    const flag = ref(true)
-    const effect1 = new ReactiveEffect(() => {
-        console.log('ReactiveEffect')
-        let temp = ''
-        if (flag.value) {
-            temp = name1.value
-        } else {
-            temp = name2.value
-        }
 
+    const person1 = {
+        name: 'wang',
+        child: {
+            name: 'a',
+            age: 22
+        }
+    }
+    const person2 = {
+        name: 'zhang',
+        child: {
+            name: 'b',
+            age: 23
+        }
+    }
+    const proxyPerson1 = ref(person1)
+    const proxyPerson2 = ref(person2)
+    const effect1 = new ReactiveEffect(() => {
+        console.log('触发effect1')
+        const name = proxyPerson1.value.child.name + proxyPerson2.value.child.name
     })
     effect1.run()
 
-    flag.value = false
-    name1.value = 'aaa'
-    name1.value = 'xxx'
-  
-    // const effect2 = new ReactiveEffect(() => {
-    //     console.log('ReactiveEffect2', count++)
-    //     name2.value + 'xing'
-    // })
-    // effect2.run()
-
-
-
+    const effect2 = new ReactiveEffect(() => {
+        console.log('触发effect2')
+        const name = proxyPerson1.value.child.name + proxyPerson2.value.child.name
+    })
+    effect2.run()
+    // 触发 对应的副作用函数
+    proxyPerson1.value.child.name = 'aaa'
+    proxyPerson2.value.child.name = 'aaa'
 </script>
 
 </html>

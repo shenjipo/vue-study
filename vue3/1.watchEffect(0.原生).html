@@ -19,14 +19,13 @@
 
     <div id="app">
 
-        <div>
-
-        </div>
+        {{student1}}
 
 
-        <button @click="changeMessage">确定</button>
+        <!-- <button @click="changeMessage">确定</button>
         <button @click="changeName1">name1</button>
-        <button @click="changeName2">name2</button>
+        <button @click="changeName2">name2</button> -->
+        <button @click="changeStu1Age">changeAge</button>
     </div>
 </body>
 
@@ -38,16 +37,22 @@
             const flag = ref(true)
             const name1 = ref('a')
             const name2 = ref('b')
-
-            const changeMessage = () => {
-                flag.value = false
+            const student1 = ref({
+                name: 'wang',
+                age: 22,
+            })
+            const changeStu1Age = () => {
+                student1.value.age += 1
             }
-            const changeName1 = () => {
-                name1.value = new Date().getTime().toString()
-            }
-            const changeName2 = () => {
-                name2.value = new Date().getTime().toString()
-            }
+            // const changeMessage = () => {
+            //     flag.value = false
+            // }
+            // const changeName1 = () => {
+            //     name1.value = new Date().getTime().toString()
+            // }
+            // const changeName2 = () => {
+            //     name2.value = new Date().getTime().toString()
+            // }
             // watchEffect(() => {
             //     console.log('effect函数执行')
             //     let temp = ''
@@ -67,11 +72,8 @@
             //     const comValue = name1.value + name2.value
             // })
             return {
-                name1,
-                name2,
-                changeMessage,
-                changeName1,
-                changeName2
+                student1,
+                changeStu1Age
             }
         }
     }).mount('#app')

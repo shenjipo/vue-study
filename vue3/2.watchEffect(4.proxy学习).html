@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="../js/vue.global.js"></script>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+
+</body>
+
+<script>
+    // let stu = {
+    //     name: 'wang',
+    //     age: 22
+    // }
+    // const p = new Proxy(stu, {
+    //     get(target, key) {
+    //         console.log('get')
+    //         return Reflect.get(target, key)
+    //     },
+    //     set(target, key, value) {
+    //         return Reflect.set(target, key, value)
+    //     }
+    // })
+
+    // p.age = 23
+    // console.log(p)
+    const parent = {
+        name: '19Qingfeng',
+        get value() {
+            return this.name;
+        },
+    };
+    const handler = {
+        get(target, key, receiver) {
+            return Reflect.get(target, key);
+            // 这里相当于return target[key]
+        },
+    };
+    const proxy = new Proxy(parent, handler);
+    const obj = {
+        name: 'wang.haoyu',
+    };
+    // 设置obj继承与parent的代理对象proxy
+    Object.setPrototypeOf(obj, proxy);
+    console.log(obj.value);  // 19Qingfeng
+    // 参考 https://www.cnblogs.com/goloving/p/14008373.html
+    // Reflect.get 第三个参数用于改变 this指向，在这个例子中，如果没有receiver参数，那么this会指向parent
+    // vue设计者希望，对于源对象的所有操作 都通过代理对象进行，但是显然 但我们想获取 obj.value值时，由于this指向了
+    // parent，获取 this.name 的行为没有通过代理对象，会导致依赖收集出现问题
+
+    const stu = {
+        name: 'wang',
+        child: {
+            name: 'zhang',
+            child2: {
+                name: 'li'
+            }
+        }
+    }
+    const p = new Proxy(stu, {
+        get(target, key, receiver) {
+            console.log(`get key=${key}`)
+            return Reflect.get(target, key, receiver)
+        },
+        set(target, key, value, receiver) {
+            console.log(`set key=${key}`, value)
+            return Reflect.set(target, key, value, receiver)
+        }
+    })
+    // console.log(p.child.child2.name)
+    p.child ={}
+   console.log(p)
+</script>
+
+</html>

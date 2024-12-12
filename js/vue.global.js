@@ -879,9 +879,6 @@ var Vue = (function (exports) {
                 return;
             }
             let link = this.activeLink;
-            if (link) {
-                console.log('track', link.sub === activeSub)
-            }
 
             if (link === void 0 || link.sub !== activeSub) {
 
@@ -1020,7 +1017,9 @@ var Vue = (function (exports) {
             globalVersion++;
             return;
         }
+
         const run = (dep) => {
+
             if (dep) {
                 {
                     dep.trigger({
@@ -1041,6 +1040,7 @@ var Vue = (function (exports) {
             const targetIsArray = isArray(target);
             const isArrayIndex = targetIsArray && isIntegerKey(key);
             if (targetIsArray && key === "length") {
+                // 获取数组长度
                 const newLength = Number(newValue);
                 depsMap.forEach((dep, key2) => {
                     if (key2 === "length" || key2 === ARRAY_ITERATE_KEY || !isSymbol(key2) && key2 >= newLength) {
@@ -1048,13 +1048,17 @@ var Vue = (function (exports) {
                     }
                 });
             } else {
+                // 只要key存在  ，或者把undefine作为key
                 if (key !== void 0 || depsMap.has(void 0)) {
                     run(depsMap.get(key));
                 }
+                // 通过下标访问数组
                 if (isArrayIndex) {
                     run(depsMap.get(ARRAY_ITERATE_KEY));
                 }
+
                 switch (type) {
+
                     case "add":
                         if (!targetIsArray) {
                             run(depsMap.get(ITERATE_KEY));
@@ -1074,6 +1078,7 @@ var Vue = (function (exports) {
                         }
                         break;
                     case "set":
+
                         if (isMap(target)) {
                             run(depsMap.get(ITERATE_KEY));
                         }
@@ -1280,6 +1285,7 @@ var Vue = (function (exports) {
             this._isShallow = _isShallow;
         }
         get(target, key, receiver) {
+      
             const isReadonly2 = this._isReadonly, isShallow2 = this._isShallow;
             if (key === "__v_isReactive") {
                 return !isReadonly2;
@@ -1288,6 +1294,7 @@ var Vue = (function (exports) {
             } else if (key === "__v_isShallow") {
                 return isShallow2;
             } else if (key === "__v_raw") {
+               
                 if (receiver === (isReadonly2 ? isShallow2 ? shallowReadonlyMap : readonlyMap : isShallow2 ? shallowReactiveMap : reactiveMap).get(target) || // receiver is not the reactive proxy, but has the same prototype
                     // this means the receiver is a user proxy of the reactive proxy
                     Object.getPrototypeOf(target) === Object.getPrototypeOf(receiver)) {
@@ -1317,6 +1324,7 @@ var Vue = (function (exports) {
                 return res;
             }
             if (!isReadonly2) {
+             
                 track(target, "get", key);
             }
             if (isShallow2) {
@@ -1363,6 +1371,7 @@ var Vue = (function (exports) {
                 if (!hadKey) {
                     trigger(target, "add", key, value);
                 } else if (hasChanged(value, oldValue)) {
+              
                     trigger(target, "set", key, value, oldValue);
                 }
             }
@@ -1665,6 +1674,7 @@ var Vue = (function (exports) {
         return value["__v_skip"] || !Object.isExtensible(value) ? 0 /* INVALID */ : targetTypeMap(toRawType(value));
     }
     function reactive(target) {
+ 
         if (isReadonly(target)) {
             return target;
         }
@@ -1677,6 +1687,7 @@ var Vue = (function (exports) {
         );
     }
     function shallowReactive(target) {
+   
         return createReactiveObject(
             target,
             false,
@@ -1704,6 +1715,8 @@ var Vue = (function (exports) {
         );
     }
     function createReactiveObject(target, isReadonly2, baseHandlers, collectionHandlers, proxyMap) {
+     
+        // 只有 object数据类型 才继续使用proxy来处理
         if (!isObject(target)) {
             {
                 warn$2(
@@ -1717,10 +1730,13 @@ var Vue = (function (exports) {
         if (target["__v_raw"] && !(isReadonly2 && target["__v_isReactive"])) {
             return target;
         }
+        // 如果已经 被proxy处理过了
         const existingProxy = proxyMap.get(target);
         if (existingProxy) {
             return existingProxy;
         }
+        // getTargetType可能返回 0 1 2
+        // 1 object或者array  2 主要是一些集合 map set weakmap weakset这些
         const targetType = getTargetType(target);
         if (targetType === 0 /* INVALID */) {
             return target;
@@ -1770,6 +1786,7 @@ var Vue = (function (exports) {
         return createRef(value, true);
     }
     function createRef(rawValue, shallow) {
+
         if (isRef(rawValue)) {
             return rawValue;
         }
@@ -1777,6 +1794,7 @@ var Vue = (function (exports) {
     }
     class RefImpl {
         constructor(value, isShallow2) {
+        
             this.dep = new Dep();
             this["__v_isRef"] = true;
             this["__v_isShallow"] = false;
@@ -1785,6 +1803,7 @@ var Vue = (function (exports) {
             this["__v_isShallow"] = isShallow2;
         }
         get value() {
+            console.log('get')
             {
                 this.dep.track({
                     target: this,
