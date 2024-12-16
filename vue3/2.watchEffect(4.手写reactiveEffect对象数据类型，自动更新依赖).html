@@ -275,36 +275,49 @@
         }
     }
 
+    // const person1 = {
+    //     name: 'wang',
+    //     child: {
+    //         name: 'a',
+    //         age: 22
+    //     }
+    // }
+    // const person2 = {
+    //     name: 'zhang',
+    //     child: {
+    //         name: 'b',
+    //         age: 23
+    //     }
+    // }
+    // const proxyPerson1 = ref(person1)
+    // const proxyPerson2 = ref(person2)
+    // const effect1 = new ReactiveEffect(() => {
+    //     console.log('触发effect1')
+    //     const name = proxyPerson1.value.child.name + proxyPerson2.value.child.name
+    // })
+    // effect1.run()
+
+    // const effect2 = new ReactiveEffect(() => {
+    //     console.log('触发effect2')
+    //     const name = proxyPerson1.value.child.name + proxyPerson2.value.child.name
+    // })
+    // effect2.run()
+    // // 触发 对应的副作用函数
+    // proxyPerson1.value.child.name = 'aaa'
+    // proxyPerson2.value.child.name = 'aaa'
+
     const person1 = {
-        name: 'wang',
-        child: {
-            name: 'a',
-            age: 22
-        }
-    }
-    const person2 = {
-        name: 'zhang',
+        name: 'a',
         child: {
             name: 'b',
-            age: 23
         }
     }
     const proxyPerson1 = ref(person1)
-    const proxyPerson2 = ref(person2)
     const effect1 = new ReactiveEffect(() => {
-        console.log('触发effect1')
-        const name = proxyPerson1.value.child.name + proxyPerson2.value.child.name
+        const name = proxyPerson1.value.child.name + proxyPerson1.value.name
     })
     effect1.run()
-
-    const effect2 = new ReactiveEffect(() => {
-        console.log('触发effect2')
-        const name = proxyPerson1.value.child.name + proxyPerson2.value.child.name
-    })
-    effect2.run()
-    // 触发 对应的副作用函数
-    proxyPerson1.value.child.name = 'aaa'
-    proxyPerson2.value.child.name = 'aaa'
+    console.log(targetMap)
 </script>
 
 </html>

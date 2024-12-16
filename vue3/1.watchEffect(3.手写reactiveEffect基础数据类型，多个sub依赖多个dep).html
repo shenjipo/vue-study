@@ -219,18 +219,18 @@
             link.nextDep = void 0;
         }
     }
-    const name1 = ref('wang', 'name1')
-    const name2 = ref('xing', 'name2')
+// 第二个参数用于调试，和响应式实现无关
+const name1 = ref('wang', 'name1')
+const name2 = ref('xing', 'name2')
 
-    const effect1 = new ReactiveEffect(() => {
-        console.log('ReactiveEffect1')
-        const res = name1.value + name2.value + '1'
-
-    }, 'effect1')
-    const effect2 = new ReactiveEffect(() => {
-        console.log('ReactiveEffect2')
-        const res = name1.value + name2.value + '2'
-    }, 'effect2')
+const effect1 = new ReactiveEffect(() => {
+    console.log('ReactiveEffect1')
+    const res = name1.value + name2.value + '1'
+}, 'effect1')
+const effect2 = new ReactiveEffect(() => {
+    console.log('ReactiveEffect2')
+    const res = name1.value + name2.value + '2'
+}, 'effect2')
     effect1.run()
     effect2.run()
     // name2变更 出发了effect1和effect2两个副作用函数

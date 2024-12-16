@@ -36,7 +36,7 @@
         get value() {
 
             this.dep.track();
-
+            console.log('dep', this.dep)
             return this._value;
         }
 
@@ -53,12 +53,15 @@
     class Dep {
         // 指向Link链表的尾部节点
         constructor() {
+            // 用来控制更新链表
             this.version = 0;
             this.activeLink = void 0;
+            // 指向link链表的尾部节点
             this.subs = void 0;
+            // 指向link链表的头部节点
             this.subsHead = void 0;
         }
-
+        // 收集依赖
         track() {
             let link = this.activeLink;
             // link === void 0 第一次构建依赖
@@ -68,6 +71,7 @@
                 if (!activeSub.deps) {
                     activeSub.deps = activeSub.depsTail = link;
                 } else {
+                    console.log('wang')
                     link.prevDep = activeSub.depsTail;
                     activeSub.depsTail.nextDep = link;
                     activeSub.depsTail = link;
@@ -78,7 +82,7 @@
             }
 
         }
-
+        // 触发更新
         trigger() {
             this.version++
             this.notify();
@@ -127,24 +131,24 @@
     // sub
     class ReactiveEffect {
         constructor(fn) {
+            // 副作用函数
             this.fn = fn;
+            // 指向链表的头部节点
             this.deps = void 0;
+            // 指向链表的尾部节点
             this.depsTail = void 0;
         }
 
         run() {
-
             prepareDeps(this);
             activeSub = this
             const res = this.fn()
             activeSub = undefined
             cleanupDeps(this)
-
             return res
         }
 
         notify() {
-
             this.run()
         }
     }
@@ -220,9 +224,9 @@
     })
     effect1.run()
     // flag.value为false之后  effect1 不再依赖name1而是依赖name2 修改name1无法触发effect1 依赖name2能触发effect1
-    flag.value = false
+    // flag.value = false
     // name1.value = 'xxx'
-    name2.value = 'aaa'
+    // name2.value = 'aaa'
 
 
     // const effect2 = new ReactiveEffect(() => {
